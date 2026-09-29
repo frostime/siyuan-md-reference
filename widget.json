@@ -1,0 +1,20 @@
+{
+  "name": "md-reference",
+  "author": "Local Prototype",
+  "url": "https://github.com/siyuan-note/widget-sample",
+  "version": "0.5.0",
+  "minAppVersion": "3.8.3",
+  "displayName": {
+    "default": "Markdown Reference",
+    "zh-CN": "Markdown 参考资料"
+  },
+  "description": {
+    "default": "Store Markdown reference materials as widget assets without converting them into SiYuan blocks.",
+    "zh-CN": "将 Markdown 参考资料保存为挂件资源，不转换为思源内容块。"
+  },
+  "readme": {
+    "default": "README.md",
+    "zh-CN": "README.md"
+  },
+  "keywords": ["markdown", "reference", "AI", "挂件", "参考资料"]
+}
