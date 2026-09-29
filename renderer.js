@@ -1,7 +1,49 @@
 import { getHostLuteConstructor } from './host.js';
 
 const MAX_MARKDOWN_BYTES = 2 * 1024 * 1024;
+// 挂件随包离线捆绑的 KaTeX（与思源内置版本一致：0.16.9）。
+const KATEX_BASE = 'vendor/katex';
 let lute = null;
+let katexReady = null;
+
+function loadStylesheet(url, id) {
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = url;
+  document.head.appendChild(link);
+}
+
+function loadScript(url, id) {
+  if (document.getElementById(id)) return;
+  const script = document.createElement('script');
+  script.id = id;
+  script.src = url;
+  document.head.appendChild(script);
+}
+
+function loadKatex() {
+  katexReady ||= new Promise((resolve, reject) => {
+    try {
+      loadStylesheet(`${KATEX_BASE}/katex.min.css`, 'mdr-katex-style');
+      loadScript(`${KATEX_BASE}/katex.min.js`, 'mdr-katex-script');
+      loadScript(`${KATEX_BASE}/mhchem.min.js`, 'mdr-katex-mhchem');
+      const started = Date.now();
+      const check = () => {
+        if (window.katex?.renderToString) return resolve();
+        if (Date.now() - started > 10000) {
+          return reject(new Error('KaTeX 资源加载失败，无法渲染公式'));
+        }
+        setTimeout(check, 100);
+      };
+      check();
+    } catch (error) {
+      reject(error);
+    }
+  });
+  return katexReady;
+}
 
 function byteLength(text) {
   return new TextEncoder().encode(text).byteLength;
@@ -88,11 +130,36 @@ function sanitizeHtml(html) {
   return template.innerHTML;
 }
 
-export function renderMarkdown(markdown) {
+// Lute 输出的 <span|div class="language-math"> 只含公式原文（定界符已被消费）；
+// 对每个元素直接调用 katex.renderToString，与思源主编辑器的 mathRender 同一思路。
+async function renderMath(container) {
+  const nodes = container.querySelectorAll('.language-math');
+  if (!nodes.length) return;
+  await loadKatex();
+  for (const el of nodes) {
+    const isBlock = el.tagName === 'DIV';
+    try {
+      el.innerHTML = window.katex.renderToString(el.textContent || '', {
+        displayMode: isBlock,
+        output: 'html',
+        throwOnError: false,
+        strict: (code) => (code === 'unicodeTextInMathMode' ? 'ignore' : 'warn'),
+      });
+    } catch (error) {
+      el.classList.add('mdr-math-error');
+      el.textContent = error?.message || String(error);
+    }
+  }
+}
+
+export async function renderMarkdown(markdown) {
   const source = String(markdown || '');
   if (byteLength(source) > MAX_MARKDOWN_BYTES) {
     throw new Error('单条 Markdown 超过 2 MiB，拒绝渲染');
   }
   const html = getLute().MarkdownStr('md-reference', source);
-  return sanitizeHtml(String(html || ''));
+  const container = document.createElement('div');
+  container.innerHTML = sanitizeHtml(String(html || ''));
+  await renderMath(container);
+  return container.innerHTML;
 }

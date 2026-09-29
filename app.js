@@ -73,7 +73,7 @@ async function load() {
   render();
 }
 
-function render() {
+async function render() {
   const item = currentItem();
   if (item && !state.activeId) state.activeId = item.id;
 
@@ -93,7 +93,7 @@ function render() {
   } else if (item) {
     let html;
     try {
-      html = renderMarkdown(item.markdown);
+      html = await renderMarkdown(item.markdown);
     } catch (error) {
       html = `<div class="render-error">${escapeHtml(error.message)}</div>`;
     }
