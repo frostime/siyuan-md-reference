@@ -1,8 +1,8 @@
 import { getHostLuteConstructor } from './host.js';
 
 const MAX_MARKDOWN_BYTES = 2 * 1024 * 1024;
-// 挂件随包离线捆绑的 KaTeX（与思源内置版本一致：0.16.9）。
-const KATEX_BASE = 'vendor/katex';
+// 复用思源自带的 KaTeX（内核从应用 stage 目录提供，与主编辑器同源同版本）。
+const KATEX_BASE = '/stage/protyle/js/katex';
 let lute = null;
 let katexReady = null;
 
@@ -28,8 +28,7 @@ function loadKatex() {
     try {
       loadStylesheet(`${KATEX_BASE}/katex.min.css`, 'mdr-katex-style');
       loadScript(`${KATEX_BASE}/katex.min.js`, 'mdr-katex-script');
-      loadScript(`${KATEX_BASE}/mhchem.min.js`, 'mdr-katex-mhchem');
-      const started = Date.now();
+      loadScript(`${KATEX_BASE}/mhchem.min.js`, 'mdr-katex-mhchem');      const started = Date.now();
       const check = () => {
         if (window.katex?.renderToString) return resolve();
         if (Date.now() - started > 10000) {
@@ -130,6 +129,16 @@ function sanitizeHtml(html) {
   return template.innerHTML;
 }
 
+// 与主编辑器 mathRender 一致：应用用户在设置里配置的 KaTeX 宏（JSON 文本，解析失败则忽略）。
+function getHostMacros() {
+  try {
+    const raw = window.parent?.siyuan?.config?.editor?.katexMacros;
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 // Lute 输出的 <span|div class="language-math"> 只含公式原文（定界符已被消费）；
 // 对每个元素直接调用 katex.renderToString，与思源主编辑器的 mathRender 同一思路。
 async function renderMath(container) {
@@ -142,6 +151,7 @@ async function renderMath(container) {
       el.innerHTML = window.katex.renderToString(el.textContent || '', {
         displayMode: isBlock,
         output: 'html',
+        macros: getHostMacros(),
         throwOnError: false,
         strict: (code) => (code === 'unicodeTextInMathMode' ? 'ignore' : 'warn'),
       });
