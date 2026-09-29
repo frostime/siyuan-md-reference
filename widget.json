@@ -2,7 +2,7 @@
   "name": "md-reference",
   "author": "Local Prototype",
   "url": "https://github.com/siyuan-note/widget-sample",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "minAppVersion": "3.8.3",
   "displayName": {
     "default": "Markdown Reference",
