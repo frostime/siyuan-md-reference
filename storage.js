@@ -1,4 +1,8 @@
 const ATTR_KEY = 'custom-data-assets';
+/* 挂件 iframe 太矮会遮住底部操作按钮，首次加载时把块高度抬到这个值。
+   用 custom- 属性记住已修过，之后用户手动缩小不再回弹。 */
+const MIN_HEIGHT_ATTR = 'custom-mdr-min-height';
+const MIN_HEIGHT_PX = 420;
 const ASSET_DIR = '/assets/md-references/';
 const ASSET_PREFIX = 'assets/md-references/';
 const SCHEMA_VERSION = 1;
@@ -24,6 +28,24 @@ async function apiJson(path, body) {
 
 export async function getBlockAttrs(blockId) {
   return apiJson('/api/attr/getBlockAttrs', { id: blockId });
+}
+
+export async function ensureMinBlockHeight(blockId, attrs) {
+  if (String(attrs?.[MIN_HEIGHT_ATTR] || '') === '1') return false;
+  const style = String(attrs?.style || '');
+  const heightMatch = style.match(/(^|;)\s*height\s*:\s*([\d.]+)(px)?\s*(;|$)/i);
+  if (heightMatch && parseFloat(heightMatch[2]) >= MIN_HEIGHT_PX) return false;
+  const newStyle = heightMatch
+    ? style.replace(heightMatch[0], `${heightMatch[1]}height:${MIN_HEIGHT_PX}px;`)
+    : `${style ? `${style.replace(/;\s*$/, '')}; ` : ''}height:${MIN_HEIGHT_PX}px;`;
+  await apiJson('/api/attr/setBlockAttrs', {
+    id: blockId,
+    attrs: {
+      style: newStyle,
+      [MIN_HEIGHT_ATTR]: '1',
+    },
+  });
+  return true;
 }
 
 export function getAssetPathFromAttrs(attrs) {

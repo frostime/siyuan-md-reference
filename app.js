@@ -3,6 +3,7 @@ import {
   createEmptyData,
   getAssetPathFromAttrs,
   getBlockAttrs,
+  ensureMinBlockHeight,
   isManagedAssetPath,
   newItemId,
   normalizeData,
@@ -57,6 +58,8 @@ async function load() {
   const attrs = await getBlockAttrs(state.blockId);
   const assetPath = getAssetPathFromAttrs(attrs);
   state.assetPath = assetPath;
+  // 抬高度失败不影响数据加载。
+  await ensureMinBlockHeight(state.blockId, attrs).catch(() => {});
 
   if (!assetPath) {
     state.data = createEmptyData(state.blockId);
@@ -99,7 +102,7 @@ async function render() {
     }
     body = `<article id="preview" class="preview b3-typography">${html || '<p></p>'}</article>`;
   } else {
-    body = `<div class="empty"><p>暂无参考资料。</p><button class="btn primary" data-action="add">＋ 新建 Markdown</button></div>`;
+    body = `<div class="empty"><button class="btn primary" data-action="add">＋ 添加 Markdown 参考资料</button></div>`;
   }
 
   const actions = state.editing

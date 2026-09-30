@@ -25,16 +25,20 @@ button { color: inherit; }
 .tab:hover, .icon-btn:hover, .btn:hover { background: var(--b3-list-hover, rgba(127,127,127,.12)); }
 .tab.active { color: var(--b3-theme-primary, #4285f4); background: var(--b3-theme-primary-lightest, rgba(66,133,244,.10)); }
 .icon-btn { width: 30px; height: 30px; font-size: 20px; }
-.content { flex: 1; min-height: 220px; overflow: auto; }
+/* min-height 用 0：短挂件下不再顶出滚动条、把底栏挤出视口 */
+.content { flex: 1; min-height: 0; overflow: auto; }
 .actions { min-height: 44px; display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding: 6px 8px; border-top: 1px solid var(--b3-border-color, #ddd); }
 .btn { padding: 5px 10px; border-color: var(--b3-border-color, #ddd); background: var(--b3-theme-surface, transparent); }
 .btn.primary { color: var(--b3-theme-on-primary, #fff); background: var(--b3-theme-primary, #4285f4); border-color: var(--b3-theme-primary, #4285f4); }
 .btn.danger { color: var(--b3-card-error-color, #d93025); }
-.empty { min-height: 220px; display: grid; place-items: center; text-align: center; color: var(--b3-theme-on-surface, #777); }
-.editor { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-height: 320px; }
+.empty { height: 100%; display: grid; place-items: center; text-align: center; color: var(--b3-theme-on-surface, #777); }
+.empty .btn { padding: 7px 16px; }
+.editor { display: flex; flex-direction: column; gap: 8px; padding: 10px; height: 100%; }
 .title-input, .markdown-input { width: 100%; border: 1px solid var(--b3-border-color, #ddd); border-radius: 6px; background: var(--b3-theme-background, #fff); color: var(--b3-theme-on-background, #222); outline: none; }
 .title-input { padding: 7px 9px; }
-.markdown-input { flex: 1; min-height: 270px; resize: vertical; padding: 10px; font-family: var(--b3-font-family-code, ui-monospace, SFMono-Regular, Consolas, monospace); line-height: 1.55; tab-size: 2; }
+/* 编辑器撑满 content 剩余高度，而不是固定 min-height 留白；
+   textarea 禁用手动拉伸（尺寸跟随挂件视口） */
+.markdown-input { flex: 1; min-height: 0; resize: none; padding: 10px; font-family: var(--b3-font-family-code, ui-monospace, SFMono-Regular, Consolas, monospace); line-height: 1.55; tab-size: 2; }
 .title-input:focus, .markdown-input:focus { border-color: var(--b3-theme-primary, #4285f4); }
 .preview { padding: 12px 16px 20px; line-height: var(--mdr-line-height); overflow-wrap: anywhere; }
 .preview > :first-child { margin-top: 0; }
