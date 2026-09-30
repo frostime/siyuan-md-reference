@@ -1,4 +1,4 @@
-import { applyHostThemeOnce, getWidgetBlockId } from './host.js';
+import { applyHostThemeOnce, getWidgetBlockId, syncHostStyles } from './host.js';
 import {
   createEmptyData,
   getAssetPathFromAttrs,
@@ -51,6 +51,8 @@ function toast(message, error = false) {
 }
 
 async function load() {
+  // 先注入宿主样式（含主题变量与编辑器字号规则），再走变量桥接兕底。
+  syncHostStyles();
   applyHostThemeOnce();
   state.blockId = getWidgetBlockId();
   if (!state.blockId) throw new Error('无法获取当前挂件块 ID');
@@ -114,6 +116,7 @@ async function render() {
   app.innerHTML = `
     <header class="topbar">
       <div class="tabs">${tabs}</div>
+      <button class="icon-btn" data-action="refresh" title="重载挂件（主题/字体设置变更后点这里）">↻</button>
       <button class="icon-btn" data-action="add" title="新建">＋</button>
     </header>
     <main class="content">${body}</main>
@@ -158,6 +161,10 @@ async function onAction(event) {
     state.dirty = false;
     state.activeId = id;
     render();
+    return;
+  }
+  if (action === 'refresh') {
+    window.location.reload();
     return;
   }
   if (action === 'add') return add();
