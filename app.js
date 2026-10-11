@@ -110,7 +110,7 @@ async function render() {
   const actions = state.editing
     ? `<button class="btn" data-action="cancel">取消</button><button class="btn primary" data-action="save">保存</button>`
     : item
-      ? `<button class="btn" data-action="copy-md">复制 Markdown</button><button class="btn" data-action="copy-text">复制纯文本</button><button class="btn" data-action="edit">编辑</button><button class="btn danger" data-action="delete">删除</button>`
+      ? `<button class="btn" data-action="copy">复制</button><button class="btn" data-action="edit">编辑</button><button class="btn danger" data-action="delete">删除</button>`
       : '';
 
   app.innerHTML = `
@@ -178,8 +178,7 @@ async function onAction(event) {
   }
   if (action === 'save') return saveEdit();
   if (action === 'delete') return deleteItem();
-  if (action === 'copy-md') return copyMarkdown();
-  if (action === 'copy-text') return copyText();
+  if (action === 'copy') return copyMarkdown();
 }
 
 function add() {
@@ -280,19 +279,6 @@ async function copyMarkdown() {
   try {
     await navigator.clipboard.writeText(item.markdown);
     toast('Markdown 已复制');
-  } catch (error) {
-    toast(`复制失败：${error.message}`, true);
-  }
-}
-
-async function copyText() {
-  const item = currentItem();
-  if (!item) return;
-  try {
-    const preview = document.getElementById('preview');
-    const text = preview?.innerText ?? '';
-    await navigator.clipboard.writeText(text);
-    toast('纯文本已复制');
   } catch (error) {
     toast(`复制失败：${error.message}`, true);
   }
