@@ -25,6 +25,7 @@ const state = {
   dirty: false,
   saving: false,
   toastTimer: 0,
+  tabsScroll: 0,
 };
 
 function escapeHtml(value) {
@@ -81,10 +82,14 @@ async function load() {
 async function render() {
   const item = currentItem();
   if (item && !state.activeId) state.activeId = item.id;
+  // 重建 DOM 会丢滚动位置；tab 多到溢出时切一下资料就会莫名跳回开头。
+  const prevTabs = app.querySelector('.tabs');
+  if (prevTabs) state.tabsScroll = prevTabs.scrollLeft;
 
   const tabs = state.data.items.map(entry => `
     <button class="tab${entry.id === state.activeId ? ' active' : ''}"
-      data-action="select" data-id="${escapeHtml(entry.id)}" title="${escapeHtml(entry.title)}">
+      draggable="true" data-action="select" data-id="${escapeHtml(entry.id)}"
+      title="${escapeHtml(entry.title)}（拖动可调整顺序）">
       ${escapeHtml(entry.title)}
     </button>`).join('');
 
@@ -122,11 +127,17 @@ async function render() {
     <main class="content">${body}</main>
     <footer class="actions">${actions}</footer>`;
   app.setAttribute('aria-busy', 'false');
+  const tabsEl = app.querySelector('.tabs');
+  if (tabsEl) tabsEl.scrollLeft = state.tabsScroll;
   bindEvents();
 }
 
 function bindEvents() {
   app.querySelectorAll('[data-action]').forEach(el => el.addEventListener('click', onAction));
+  const tabsEl = app.querySelector('.tabs');
+  tabsEl?.addEventListener('dragstart', onTabDragStart);
+  tabsEl?.addEventListener('dragover', onTabDragOver);
+  tabsEl?.addEventListener('dragend', onTabDragEnd);
   document.getElementById('titleInput')?.addEventListener('input', event => {
     state.draftTitle = event.target.value;
     state.dirty = true;
@@ -150,6 +161,68 @@ function bindEvents() {
       state.dirty = true;
     }
   });
+}
+
+/* 拖动 tab 调整顺序：拖动过程中直接搬 DOM 节点（其他 tab 实时让位），
+   松手时才把最终顺序写回数据并保存一次——每次保存都会上传一个新的 asset 文件。 */
+let draggingTabId = '';
+
+function tabElements() {
+  return [...app.querySelectorAll('.tabs .tab')];
+}
+
+function onTabDragStart(event) {
+  const tab = event.target.closest?.('.tab');
+  if (!tab || state.saving) {
+    event.preventDefault();
+    return;
+  }
+  draggingTabId = tab.dataset.id;
+  // Firefox 不 setData 就不启动拖拽；Chromium 无此行也照常，两行成本换跨浏览器一致。
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', draggingTabId);
+  tab.classList.add('dragging');
+}
+
+function onTabDragOver(event) {
+  if (!draggingTabId) return;
+  // 不 preventDefault 则不允许 drop，光标会显示禁止图标。
+  event.preventDefault();
+  const dragged = tabElements().find(el => el.dataset.id === draggingTabId);
+  const over = event.target.closest?.('.tab');
+  if (!dragged || !over || over === dragged) return;
+  const rect = over.getBoundingClientRect();
+  // 越过中线才让位，避免指针停在缝隙处来回抖。
+  if (event.clientX > rect.left + rect.width / 2) over.after(dragged);
+  else over.before(dragged);
+}
+
+function onTabDragEnd() {
+  tabElements().find(el => el.dataset.id === draggingTabId)?.classList.remove('dragging');
+  const domIds = tabElements().map(el => el.dataset.id);
+  draggingTabId = '';
+  void applyTabOrder(domIds);
+}
+
+async function applyTabOrder(domIds) {
+  const currentIds = state.data.items.map(item => item.id);
+  if (domIds.length !== currentIds.length) return;
+  if (domIds.every((id, index) => id === currentIds[index])) return;
+  const byId = new Map(state.data.items.map(item => [item.id, item]));
+  if (domIds.some(id => !byId.has(id))) return;
+
+  const snapshot = structuredClone(state.data);
+  state.data.items = domIds.map(id => byId.get(id));
+  try {
+    await persist();
+  } catch (error) {
+    state.data = snapshot;
+    render();
+    toast(`排序失败：${error.message}`, true);
+    return;
+  }
+  render();
+  toast('顺序已保存');
 }
 
 async function onAction(event) {

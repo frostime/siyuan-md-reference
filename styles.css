@@ -21,8 +21,11 @@ button { color: inherit; }
 .content::-webkit-scrollbar-thumb:hover, .markdown-input::-webkit-scrollbar-thumb:hover, .preview pre::-webkit-scrollbar-thumb:hover, .tabs::-webkit-scrollbar-thumb:hover { background-color: var(--b3-scroll-color-hover, rgba(127,127,127,.5)); }
 .content::-webkit-scrollbar-corner { background: transparent; }
 .tab, .icon-btn, .btn { border: 1px solid transparent; border-radius: 5px; background: transparent; cursor: pointer; }
-.tab { max-width: 220px; padding: 5px 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--b3-theme-on-surface, #666); }
+/* flex-shrink 必须关掉：.tab 有 overflow:hidden，flex 自动最小尺寸因此为 0，
+   允许收缩的话 tab 们会被压成几十像素的色块，滚动条永远不会出现。 */
+.tab { flex: 0 0 auto; max-width: 220px; padding: 5px 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--b3-theme-on-surface, #666); }
 .tab:hover, .icon-btn:hover, .btn:hover { background: var(--b3-list-hover, rgba(127,127,127,.12)); }
+.tab.dragging { opacity: .45; }
 .tab.active { color: var(--b3-theme-primary, #4285f4); background: var(--b3-theme-primary-lightest, rgba(66,133,244,.10)); }
 .icon-btn { width: 30px; height: 30px; font-size: 20px; }
 /* min-height 用 0：短挂件下不再顶出滚动条、把底栏挤出视口 */
