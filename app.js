@@ -26,6 +26,7 @@ const state = {
   saving: false,
   toastTimer: 0,
   tabsScroll: 0,
+  menuOpen: false,
 };
 
 function escapeHtml(value) {
@@ -35,6 +36,23 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+const ICONS = {
+  add: '<path d="M12 5v14M5 12h14"/>',
+  refresh: '<path d="M20 5v6h-6"/><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  edit: '<path d="M4 20h4L20 8a2.83 2.83 0 0 0-4-4L4 16v4Z"/><path d="M13.5 5.5l5 5"/>',
+  more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  trash: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
+};
+
+function icon(name) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
+function iconButton(action, label) {
+  return `<button class="icon-btn" data-action="${action}" title="${label}" aria-label="${label}">${icon(action)}</button>`;
 }
 
 function currentItem() {
@@ -76,12 +94,13 @@ async function load() {
   }
 
   state.activeId = state.data.items[0]?.id || '';
-  render();
+  await render();
 }
 
 async function render() {
   const item = currentItem();
   if (item && !state.activeId) state.activeId = item.id;
+  state.menuOpen = false;
   // 重建 DOM 会丢滚动位置；tab 多到溢出时切一下资料就会莫名跳回开头。
   const prevTabs = app.querySelector('.tabs');
   if (prevTabs) state.tabsScroll = prevTabs.scrollLeft;
@@ -115,21 +134,42 @@ async function render() {
   const actions = state.editing
     ? `<button class="btn" data-action="cancel">取消</button><button class="btn primary" data-action="save">保存</button>`
     : item
-      ? `<button class="btn" data-action="copy">复制</button><button class="btn" data-action="edit">编辑</button><button class="btn danger" data-action="delete">删除</button>`
-      : '';
+      ? `${iconButton('add', '新建')}<span class="sep"></span>${iconButton('copy', '复制 Markdown')}${iconButton('edit', '编辑')}${moreMenu()}`
+      : iconButton('add', '新建');
 
   app.innerHTML = `
     <header class="topbar">
       <div class="tabs">${tabs}</div>
-      <button class="icon-btn" data-action="refresh" title="重载挂件（主题/字体设置变更后点这里）">↻</button>
-      <button class="icon-btn" data-action="add" title="新建">＋</button>
+      ${actions}
     </header>
-    <main class="content">${body}</main>
-    <footer class="actions">${actions}</footer>`;
+    <main class="content">${body}</main>`;
   app.setAttribute('aria-busy', 'false');
   const tabsEl = app.querySelector('.tabs');
   if (tabsEl) tabsEl.scrollLeft = state.tabsScroll;
   bindEvents();
+}
+
+function moreMenu() {
+  return `
+    <div class="menu-wrap">
+      <button class="icon-btn more" data-action="menu" title="更多" aria-label="更多"
+        aria-haspopup="menu" aria-expanded="${state.menuOpen}">${icon('more')}</button>
+      <div class="menu${state.menuOpen ? ' open' : ''}" role="menu">
+        <button role="menuitem" data-action="refresh" title="主题或字体设置变更后，重载挂件以应用新样式">${icon('refresh')}重载挂件</button>
+        <button role="menuitem" class="danger" data-action="delete">${icon('trash')}删除当前资料</button>
+      </div>
+    </div>`;
+}
+
+function syncMenu() {
+  app.querySelector('.menu')?.classList.toggle('open', state.menuOpen);
+  app.querySelector('[data-action="menu"]')?.setAttribute('aria-expanded', String(state.menuOpen));
+}
+
+function closeMenu() {
+  if (!state.menuOpen) return;
+  state.menuOpen = false;
+  syncMenu();
 }
 
 function bindEvents() {
@@ -217,16 +257,22 @@ async function applyTabOrder(domIds) {
     await persist();
   } catch (error) {
     state.data = snapshot;
-    render();
+    await render();
     toast(`排序失败：${error.message}`, true);
     return;
   }
-  render();
+  await render();
   toast('顺序已保存');
 }
 
 async function onAction(event) {
   const { action, id } = event.currentTarget.dataset;
+  if (action === 'menu') {
+    state.menuOpen = !state.menuOpen;
+    syncMenu();
+    return;
+  }
+  closeMenu();
   if (action === 'select') {
     if (state.editing && state.dirty && !confirm('当前编辑尚未保存，确定切换吗？')) return;
     state.editing = false;
@@ -315,13 +361,13 @@ async function saveEdit() {
     state.editing = false;
     state.editMode = '';
     state.dirty = false;
-    render();
+    await render();
     toast('已保存');
   } catch (error) {
     state.data = snapshot;
     state.activeId = oldActive;
     state.dirty = true;
-    render();
+    await render();
     toast(`保存失败：${error.message}`, true);
   }
 }
@@ -336,12 +382,12 @@ async function deleteItem() {
   state.activeId = state.data.items[Math.min(index, state.data.items.length - 1)]?.id || '';
   try {
     await persist();
-    render();
+    await render();
     toast('已删除');
   } catch (error) {
     state.data = snapshot;
     state.activeId = oldActive;
-    render();
+    await render();
     toast(`删除失败：${error.message}`, true);
   }
 }
@@ -356,6 +402,19 @@ async function copyMarkdown() {
     toast(`复制失败：${error.message}`, true);
   }
 }
+
+document.addEventListener('click', event => {
+  if (!state.menuOpen) return;
+  if (event.target.closest?.('.menu-wrap')) return;
+  closeMenu();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeMenu();
+});
+
+// 点击挂件外部时 iframe 内的 document 收不到 click，只能靠失焦收起菜单。
+window.addEventListener('blur', closeMenu);
 
 load().catch(error => {
   app.setAttribute('aria-busy', 'false');

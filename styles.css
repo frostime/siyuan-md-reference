@@ -10,7 +10,7 @@ body { font-family: var(--mdr-font-family); font-size: var(--mdr-font-size); }
 button, input, textarea { font: inherit; }
 button { color: inherit; }
 .app { height: 100%; display: flex; flex-direction: column; background: var(--b3-theme-background, #fff); }
-.topbar { display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 5px 8px; border-bottom: 1px solid var(--b3-border-color, #ddd); }
+.topbar { position: relative; z-index: 5; display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 5px 8px; border-bottom: 1px solid var(--b3-border-color, #ddd); }
 .tabs { flex: 1; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; }
 
 /* 贴近思源主界面的滚动条样式：透明轨道 + 半透明圆角滑块 */
@@ -27,13 +27,22 @@ button { color: inherit; }
 .tab:hover, .icon-btn:hover, .btn:hover { background: var(--b3-list-hover, rgba(127,127,127,.12)); }
 .tab.dragging { opacity: .45; }
 .tab.active { color: var(--b3-theme-primary, #4285f4); background: var(--b3-theme-primary-lightest, rgba(66,133,244,.10)); }
-.icon-btn { width: 30px; height: 30px; font-size: 20px; }
-/* min-height 用 0：短挂件下不再顶出滚动条、把底栏挤出视口 */
+.icon-btn { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; font-size: 20px; }
+.icon-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.icon-btn.more svg { fill: currentColor; stroke: none; }
+.sep { flex: 0 0 auto; width: 1px; height: 18px; margin: 0 2px; background: var(--b3-border-color, #ddd); }
+.menu-wrap { position: relative; display: flex; }
+.menu { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; min-width: 158px; padding: 4px; border: 1px solid var(--b3-border-color, #ddd); border-radius: 8px; background: var(--b3-theme-background, #fff); box-shadow: 0 10px 28px rgba(0, 0, 0, .18); }
+.menu.open { display: block; }
+.menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 9px; border: 0; border-radius: 5px; background: transparent; color: inherit; font-size: 13px; text-align: left; white-space: nowrap; cursor: pointer; }
+.menu button:hover { background: var(--b3-list-hover, rgba(127, 127, 127, .12)); }
+.menu button.danger { color: var(--b3-card-error-color, #d93025); }
+.menu button svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.topbar .btn { padding: 4px 11px; font-size: 13px; }
+/* min-height 用 0：短挂件下不再顶出滚动条、把正文挤出视口 */
 .content { flex: 1; min-height: 0; overflow: auto; }
-.actions { min-height: 44px; display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding: 6px 8px; border-top: 1px solid var(--b3-border-color, #ddd); }
 .btn { padding: 5px 10px; border-color: var(--b3-border-color, #ddd); background: var(--b3-theme-surface, transparent); }
 .btn.primary { color: var(--b3-theme-on-primary, #fff); background: var(--b3-theme-primary, #4285f4); border-color: var(--b3-theme-primary, #4285f4); }
-.btn.danger { color: var(--b3-card-error-color, #d93025); }
 .empty { height: 100%; display: grid; place-items: center; text-align: center; color: var(--b3-theme-on-surface, #777); }
 .empty .btn { padding: 7px 16px; }
 .editor { display: flex; flex-direction: column; gap: 8px; padding: 10px; height: 100%; }

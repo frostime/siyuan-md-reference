@@ -1,5 +1,5 @@
 const ATTR_KEY = 'custom-data-assets';
-/* 挂件 iframe 太矮会遮住底部操作按钮，首次加载时把块高度抬到这个值。
+/* 首次加载时把块高度抬到舒适阅读的下限。
    用 custom- 属性记住已修过，之后用户手动缩小不再回弹。 */
 const MIN_HEIGHT_ATTR = 'custom-mdr-min-height';
 const MIN_HEIGHT_PX = 420;
