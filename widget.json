@@ -1,8 +1,8 @@
 {
   "name": "md-reference",
-  "author": "Local Prototype",
-  "url": "https://github.com/siyuan-note/widget-sample",
-  "version": "0.8.0",
+  "author": "frostime",
+  "url": "https://github.com/frostime/siyuan-md-reference",
+  "version": "0.9.0",
   "minAppVersion": "3.8.3",
   "displayName": {
     "default": "Markdown Reference",
